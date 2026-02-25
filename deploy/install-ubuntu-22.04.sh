@@ -192,6 +192,15 @@ elif [[ -n "$DOMAIN" && -n "$LETSENCRYPT_EMAIL" ]]; then
   certbot --nginx -d "$DOMAIN" -m "$LETSENCRYPT_EMAIL" --agree-tos --non-interactive --redirect || true
 fi
 
+echo "[13/13] Criando comando global de update..."
+cat >/usr/local/bin/telegroupbot-update <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+APP_DIR="${1:-/var/www/telegroupbot}"
+bash "$APP_DIR/deploy/update.sh" "$APP_DIR"
+EOF
+chmod +x /usr/local/bin/telegroupbot-update
+
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 
 echo ""
@@ -199,4 +208,5 @@ echo "✅ Instalação concluída"
 echo "App (local): http://${DOMAIN:-$LOCAL_IP}"
 echo "SSH (local): ssh -p ${SSH_PORT} $(whoami)@${LOCAL_IP}"
 echo "Path: ${APP_DIR}"
+echo "Update global: telegroupbot-update /var/www/telegroupbot"
 echo ""

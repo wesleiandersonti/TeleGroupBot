@@ -71,6 +71,14 @@ No final, o script mostra:
 
 ## Update do sistema
 
+Comando local no projeto:
+
 ```bash
 bash deploy/update.sh /var/www/telegroupbot
+```
+
+Comando global (criado pelo instalador):
+
+```bash
+telegroupbot-update /var/www/telegroupbot
 ```
