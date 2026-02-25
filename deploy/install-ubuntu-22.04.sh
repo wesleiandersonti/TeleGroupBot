@@ -109,7 +109,8 @@ fi
 
 sed -i "s|^APP_ENV=.*|APP_ENV=${APP_ENV}|" .env || true
 sed -i "s|^APP_DEBUG=.*|APP_DEBUG=${APP_DEBUG}|" .env || true
-sed -i "s|^APP_URL=.*|APP_URL=http://${DOMAIN:-$(hostname -I | awk '{print $1}')}|" .env || true
+LOCAL_IP=$(hostname -I | awk '{print $1}')
+sed -i "s|^APP_URL=.*|APP_URL=http://${DOMAIN:-$LOCAL_IP}|" .env || true
 sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env || true
 sed -i "s|^DB_HOST=.*|DB_HOST=127.0.0.1|" .env || true
 sed -i "s|^DB_PORT=.*|DB_PORT=3306|" .env || true
@@ -185,14 +186,11 @@ if [[ -n "$DOMAIN" && -n "$LETSENCRYPT_EMAIL" ]]; then
   certbot --nginx -d "$DOMAIN" -m "$LETSENCRYPT_EMAIL" --agree-tos --non-interactive --redirect || true
 fi
 
-PUBLIC_IP=$(curl -4 -s ifconfig.me || true)
-if [[ -z "$PUBLIC_IP" ]]; then
-  PUBLIC_IP=$(hostname -I | awk '{print $1}')
-fi
+LOCAL_IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo "✅ Instalação concluída"
-echo "App: http://${DOMAIN:-$PUBLIC_IP}"
-echo "SSH: ssh -p ${SSH_PORT} $(whoami)@${PUBLIC_IP}"
+echo "App (local): http://${DOMAIN:-$LOCAL_IP}"
+echo "SSH (local): ssh -p ${SSH_PORT} $(whoami)@${LOCAL_IP}"
 echo "Path: ${APP_DIR}"
 echo ""
