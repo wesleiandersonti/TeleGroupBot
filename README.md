@@ -89,14 +89,5 @@ Na tela **Update Center** (`/check/update`) existem dois botões:
 - **Update do Sistema**
 - **Reiniciar Serviços**
 
-Para o botão de reinício funcionar via painel web, configure sudoers para `www-data`:
-
-```bash
-sudo visudo -f /etc/sudoers.d/telegroupbot
-```
-
-Conteúdo:
-
-```text
-www-data ALL=(ALL) NOPASSWD:/usr/bin/systemctl restart php8.1-fpm,/usr/bin/systemctl restart nginx
-```
+✅ O instalador já configura automaticamente o sudoers necessário em:
+`/etc/sudoers.d/telegroupbot`

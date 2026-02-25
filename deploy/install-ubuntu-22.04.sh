@@ -192,7 +192,7 @@ elif [[ -n "$DOMAIN" && -n "$LETSENCRYPT_EMAIL" ]]; then
   certbot --nginx -d "$DOMAIN" -m "$LETSENCRYPT_EMAIL" --agree-tos --non-interactive --redirect || true
 fi
 
-echo "[13/13] Criando comando global de update..."
+echo "[13/14] Criando comando global de update..."
 cat >/usr/local/bin/telegroupbot-update <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -200,6 +200,12 @@ APP_DIR="${1:-/var/www/telegroupbot}"
 bash "$APP_DIR/deploy/update.sh" "$APP_DIR"
 EOF
 chmod +x /usr/local/bin/telegroupbot-update
+
+echo "[14/14] Configurando sudoers para botões admin (restart services)..."
+cat >/etc/sudoers.d/telegroupbot <<EOF
+www-data ALL=(ALL) NOPASSWD:/usr/bin/systemctl restart php${PHP_VERSION}-fpm,/usr/bin/systemctl restart nginx
+EOF
+chmod 440 /etc/sudoers.d/telegroupbot
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 
@@ -209,4 +215,5 @@ echo "App (local): http://${DOMAIN:-$LOCAL_IP}"
 echo "SSH (local): ssh -p ${SSH_PORT} $(whoami)@${LOCAL_IP}"
 echo "Path: ${APP_DIR}"
 echo "Update global: telegroupbot-update /var/www/telegroupbot"
+echo "Sudoers admin buttons: /etc/sudoers.d/telegroupbot"
 echo ""
