@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use ZipArchive;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class UpdateSystem extends Home
 {
@@ -235,6 +236,10 @@ class UpdateSystem extends Home
         }
 
         try {
+            if (!Cache::add('system_ops_update_lock', 1, 120)) {
+                return Response::json(['status' => '0', 'message' => __('Another update is already running. Please wait.')]);
+            }
+
             $appDir = base_path();
             $script = $appDir . '/deploy/update.sh';
             if(!file_exists($script)) {
@@ -245,11 +250,13 @@ class UpdateSystem extends Home
             $cmd = "bash " . escapeshellarg($script) . " " . escapeshellarg($appDir) . " > " . escapeshellarg(storage_path('logs/system-update.log')) . " 2>&1 &";
             exec($cmd);
 
-            Log::info('System local update triggered by admin', ['user_id' => auth()->id()]);
+            Log::channel('single')->info('admin_ops:update_local', ['user_id' => auth()->id(), 'ip' => request()->ip()]);
             return Response::json(['status' => '1', 'message' => __('Update command started successfully.')]);
         } catch (\Throwable $e) {
             Log::error('System local update failed', ['error' => $e->getMessage()]);
             return Response::json(['status' => '0', 'message' => $e->getMessage()]);
+        } finally {
+            Cache::forget('system_ops_update_lock');
         }
     }
 
@@ -260,15 +267,21 @@ class UpdateSystem extends Home
         }
 
         try {
+            if (!Cache::add('system_ops_restart_lock', 1, 60)) {
+                return Response::json(['status' => '0', 'message' => __('Another restart is already running. Please wait.')]);
+            }
+
             // Requires sudoers entry for www-data without password.
             $cmd = "sudo systemctl restart php8.1-fpm nginx > " . escapeshellarg(storage_path('logs/system-restart.log')) . " 2>&1 &";
             exec($cmd);
 
-            Log::info('System services restart triggered by admin', ['user_id' => auth()->id()]);
+            Log::channel('single')->info('admin_ops:restart_services', ['user_id' => auth()->id(), 'ip' => request()->ip()]);
             return Response::json(['status' => '1', 'message' => __('Restart command started successfully.')]);
         } catch (\Throwable $e) {
             Log::error('System services restart failed', ['error' => $e->getMessage()]);
             return Response::json(['status' => '0', 'message' => $e->getMessage()]);
+        } finally {
+            Cache::forget('system_ops_restart_lock');
         }
     }
 }

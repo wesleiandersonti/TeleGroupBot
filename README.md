@@ -91,3 +91,12 @@ Na tela **Update Center** (`/check/update`) existem dois botões:
 
 ✅ O instalador já configura automaticamente o sudoers necessário em:
 `/etc/sudoers.d/telegroupbot`
+
+## Automações de produção já incluídas
+
+- `telegroupbot-update` (update 1 comando)
+- `telegroupbot-health` (healthcheck 1 comando)
+- worker de fila via systemd (`telegroupbot-worker`)
+- backup diário automático (03:30) em `/var/backups/telegroupbot`
+- fail2ban habilitado
+- endpoint de saúde: `/health`

@@ -52,7 +52,7 @@ apt-get update -y
 apt-get upgrade -y
 
 echo "[2/12] Instalando dependências base..."
-apt-get install -y software-properties-common ca-certificates curl gnupg lsb-release unzip git ufw nginx mysql-server redis-server
+apt-get install -y software-properties-common ca-certificates curl gnupg lsb-release unzip git ufw nginx mysql-server redis-server fail2ban
 
 echo "[3/12] Instalando PHP ${PHP_VERSION} + extensões..."
 add-apt-repository -y ppa:ondrej/php
@@ -133,6 +133,7 @@ chown -R www-data:www-data "$APP_DIR"
 find "$APP_DIR" -type f -exec chmod 644 {} \;
 find "$APP_DIR" -type d -exec chmod 755 {} \;
 chmod -R 775 "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
+chmod +x "$APP_DIR/deploy/update.sh" "$APP_DIR/deploy/backup.sh" "$APP_DIR/deploy/healthcheck.sh" "$APP_DIR/deploy/setup-worker.sh" || true
 
 echo "[10/12] Nginx + PHP-FPM..."
 cat >/etc/nginx/sites-available/telegroupbot <<NGINX
@@ -168,6 +169,9 @@ nginx -t
 systemctl enable --now php${PHP_VERSION}-fpm nginx redis-server
 systemctl reload nginx
 
+# Queue worker
+bash "$APP_DIR/deploy/setup-worker.sh" "$APP_DIR" "/usr/bin/php"
+
 echo "[11/12] SSH + Firewall..."
 apt-get install -y openssh-server
 systemctl enable --now ssh
@@ -183,6 +187,10 @@ if [[ "$CLOUDFLARED_ONLY" != "true" ]]; then
   ufw allow 443/tcp
 fi
 ufw --force enable
+systemctl enable --now fail2ban
+
+# Backup diário 03:30
+( crontab -l 2>/dev/null | grep -v 'telegroupbot-backup'; echo "30 3 * * * /bin/bash $APP_DIR/deploy/backup.sh $APP_DIR /var/backups/telegroupbot 7 # telegroupbot-backup" ) | crontab -
 
 echo "[12/12] HTTPS (opcional automático)..."
 if [[ "$CLOUDFLARED_ONLY" == "true" ]]; then
@@ -201,6 +209,14 @@ bash "$APP_DIR/deploy/update.sh" "$APP_DIR"
 EOF
 chmod +x /usr/local/bin/telegroupbot-update
 
+cat >/usr/local/bin/telegroupbot-health <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+URL="${1:-http://127.0.0.1/health}"
+bash /var/www/telegroupbot/deploy/healthcheck.sh "$URL"
+EOF
+chmod +x /usr/local/bin/telegroupbot-health
+
 echo "[14/14] Configurando sudoers para botões admin (restart services)..."
 cat >/etc/sudoers.d/telegroupbot <<EOF
 www-data ALL=(ALL) NOPASSWD:/usr/bin/systemctl restart php${PHP_VERSION}-fpm,/usr/bin/systemctl restart nginx
@@ -215,5 +231,8 @@ echo "App (local): http://${DOMAIN:-$LOCAL_IP}"
 echo "SSH (local): ssh -p ${SSH_PORT} $(whoami)@${LOCAL_IP}"
 echo "Path: ${APP_DIR}"
 echo "Update global: telegroupbot-update /var/www/telegroupbot"
+echo "Healthcheck global: telegroupbot-health http://127.0.0.1/health"
+echo "Backup diário: 03:30 em /var/backups/telegroupbot"
+echo "Worker: systemctl status telegroupbot-worker"
 echo "Sudoers admin buttons: /etc/sudoers.d/telegroupbot"
 echo ""

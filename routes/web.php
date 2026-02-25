@@ -20,6 +20,10 @@ $auth_or_guest =  env('APP_ENV')=='local' ? 'guest' : 'auth';
 |
 */
 
+Route::get('/health', function () {
+    return response()->json(['ok' => true, 'app' => config('app.name'), 'time' => now()->toIso8601String()]);
+})->name('health');
+
 Route::get('/dashboard/user', [Dashboard::class,'index'])->middleware(['auth'])->name('dashboard-user');
 Route::post('/dashboard/dashboard-change-data', [Dashboard::class,'dashboard_change_data'])->middleware(['auth'])->name('dashboard-change-data');
 
@@ -90,8 +94,8 @@ Route::get('credential/check', [Home::class,'credential_check'])->middleware(['a
 Route::post('credential/check', [Home::class,'credential_check_action'])->middleware(['auth'])->name('credential-check-action');
 Route::get('check/update', [UpdateSystem::class,'update_list'])->middleware(['auth'])->name('update-list');
 Route::post('initiate/update', [UpdateSystem::class,'initialize_update'])->middleware(['auth'])->name('update-initiate');
-Route::post('system/ops/update-local', [UpdateSystem::class,'run_local_update'])->middleware(['auth'])->name('system-ops-update-local');
-Route::post('system/ops/restart-services', [UpdateSystem::class,'restart_services'])->middleware(['auth'])->name('system-ops-restart-services');
+Route::post('system/ops/update-local', [UpdateSystem::class,'run_local_update'])->middleware(['auth','throttle:3,1'])->name('system-ops-update-local');
+Route::post('system/ops/restart-services', [UpdateSystem::class,'restart_services'])->middleware(['auth','throttle:3,1'])->name('system-ops-restart-services');
 
 Route::get('/storage/{extra}', function ($extra) {
 return redirect("/public/storage/$extra");
