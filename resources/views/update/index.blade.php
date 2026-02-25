@@ -6,8 +6,16 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card mb-4 no-shadow">
-                        <div class="card-header pt-4">
+                        <div class="card-header pt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <h4 class="card-title card-title-dash ">{{__("Available Versions")}} (<?php echo __('Using');?> : <b>v<?php echo $current_version; ?>)</h4>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-warning btn-sm" id="btn-system-update-local">
+                                    <i class="fas fa-sync"></i> {{ __('Update do Sistema') }}
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="btn-system-restart-services">
+                                    <i class="fas fa-power-off"></i> {{ __('Reiniciar Serviços') }}
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <?php
@@ -158,4 +166,50 @@
 
 @push('scripts-footer')
 @include('update.index-js')
+<script>
+(function(){
+  const csrf = '{{ csrf_token() }}';
+
+  async function postAction(url, okMsg){
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrf,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (String(data.status) === '1') {
+        alert(okMsg + "\n" + (data.message || ''));
+      } else {
+        alert('Falha: ' + (data.message || 'Erro desconhecido'));
+      }
+    } catch (e) {
+      alert('Erro ao executar ação: ' + e.message);
+    }
+  }
+
+  const btnUpdate = document.getElementById('btn-system-update-local');
+  const btnRestart = document.getElementById('btn-system-restart-services');
+
+  if (btnUpdate) {
+    btnUpdate.addEventListener('click', function(){
+      if(confirm('Confirma iniciar UPDATE local do sistema?')) {
+        postAction('{{ route('system-ops-update-local') }}', 'Update iniciado.');
+      }
+    });
+  }
+
+  if (btnRestart) {
+    btnRestart.addEventListener('click', function(){
+      if(confirm('Confirma REINICIAR serviços (php-fpm/nginx)?')) {
+        postAction('{{ route('system-ops-restart-services') }}', 'Reinício iniciado.');
+      }
+    });
+  }
+})();
+</script>
 @endpush

@@ -90,6 +90,8 @@ Route::get('credential/check', [Home::class,'credential_check'])->middleware(['a
 Route::post('credential/check', [Home::class,'credential_check_action'])->middleware(['auth'])->name('credential-check-action');
 Route::get('check/update', [UpdateSystem::class,'update_list'])->middleware(['auth'])->name('update-list');
 Route::post('initiate/update', [UpdateSystem::class,'initialize_update'])->middleware(['auth'])->name('update-initiate');
+Route::post('system/ops/update-local', [UpdateSystem::class,'run_local_update'])->middleware(['auth'])->name('system-ops-update-local');
+Route::post('system/ops/restart-services', [UpdateSystem::class,'restart_services'])->middleware(['auth'])->name('system-ops-restart-services');
 
 Route::get('/storage/{extra}', function ($extra) {
 return redirect("/public/storage/$extra");

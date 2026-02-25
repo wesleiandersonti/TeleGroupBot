@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use ZipArchive;
+use Illuminate\Support\Facades\Log;
 
 class UpdateSystem extends Home
 {
@@ -225,5 +226,49 @@ class UpdateSystem extends Home
 
         echo json_encode($response);
 
+    }
+
+    public function run_local_update(Request $request)
+    {
+        if(config('app.is_demo') == '1') {
+            return Response::json(['status' => '0', 'message' => __('This feature is disabled in this demo.')]);
+        }
+
+        try {
+            $appDir = base_path();
+            $script = $appDir . '/deploy/update.sh';
+            if(!file_exists($script)) {
+                return Response::json(['status' => '0', 'message' => __('Update script not found: :path',['path'=>$script])]);
+            }
+
+            // execute in background to avoid web timeout
+            $cmd = "bash " . escapeshellarg($script) . " " . escapeshellarg($appDir) . " > " . escapeshellarg(storage_path('logs/system-update.log')) . " 2>&1 &";
+            exec($cmd);
+
+            Log::info('System local update triggered by admin', ['user_id' => auth()->id()]);
+            return Response::json(['status' => '1', 'message' => __('Update command started successfully.')]);
+        } catch (\Throwable $e) {
+            Log::error('System local update failed', ['error' => $e->getMessage()]);
+            return Response::json(['status' => '0', 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function restart_services(Request $request)
+    {
+        if(config('app.is_demo') == '1') {
+            return Response::json(['status' => '0', 'message' => __('This feature is disabled in this demo.')]);
+        }
+
+        try {
+            // Requires sudoers entry for www-data without password.
+            $cmd = "sudo systemctl restart php8.1-fpm nginx > " . escapeshellarg(storage_path('logs/system-restart.log')) . " 2>&1 &";
+            exec($cmd);
+
+            Log::info('System services restart triggered by admin', ['user_id' => auth()->id()]);
+            return Response::json(['status' => '1', 'message' => __('Restart command started successfully.')]);
+        } catch (\Throwable $e) {
+            Log::error('System services restart failed', ['error' => $e->getMessage()]);
+            return Response::json(['status' => '0', 'message' => $e->getMessage()]);
+        }
     }
 }
