@@ -53,6 +53,17 @@ sudo bash deploy/install-ubuntu-22.04.sh \
   --db-pass 'SENHA_FORTE'
 ```
 
+Para uso com túnel Cloudflared (sem HTTPS local/certbot):
+
+```bash
+sudo bash deploy/install-ubuntu-22.04.sh \
+  --repo https://github.com/wesleiandersonti/TeleGroupBot.git \
+  --db-name telegroupbot \
+  --db-user telegroupbot \
+  --db-pass 'SENHA_FORTE' \
+  --cloudflared-only
+```
+
 No final, o script mostra:
 - URL da aplicação
 - IP público detectado

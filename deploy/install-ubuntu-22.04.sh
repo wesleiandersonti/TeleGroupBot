@@ -21,6 +21,7 @@ DB_ROOT_PASS=""
 SSH_PORT="22"
 APP_ENV="production"
 APP_DEBUG="false"
+CLOUDFLARED_ONLY="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -34,6 +35,7 @@ while [[ $# -gt 0 ]]; do
     --db-pass) DB_PASS="$2"; shift 2 ;;
     --db-root-pass) DB_ROOT_PASS="$2"; shift 2 ;;
     --ssh-port) SSH_PORT="$2"; shift 2 ;;
+    --cloudflared-only) CLOUDFLARED_ONLY="true"; shift 1 ;;
     *) echo "Unknown arg: $1"; exit 1 ;;
   esac
 done
@@ -177,11 +179,15 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw allow ${SSH_PORT}/tcp
 ufw allow 80/tcp
-ufw allow 443/tcp
+if [[ "$CLOUDFLARED_ONLY" != "true" ]]; then
+  ufw allow 443/tcp
+fi
 ufw --force enable
 
 echo "[12/12] HTTPS (opcional automático)..."
-if [[ -n "$DOMAIN" && -n "$LETSENCRYPT_EMAIL" ]]; then
+if [[ "$CLOUDFLARED_ONLY" == "true" ]]; then
+  echo "Cloudflared-only ativo: sem certbot e sem porta 443 local."
+elif [[ -n "$DOMAIN" && -n "$LETSENCRYPT_EMAIL" ]]; then
   apt-get install -y certbot python3-certbot-nginx
   certbot --nginx -d "$DOMAIN" -m "$LETSENCRYPT_EMAIL" --agree-tos --non-interactive --redirect || true
 fi
