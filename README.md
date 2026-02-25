@@ -39,12 +39,27 @@ php artisan serve
 - Arquivos sensíveis (`.env`, logs, dependências locais) ficam fora do versionamento.
 - Para produção, configure cache, queue e HTTPS.
 
-## Deploy rápido (produção)
+## Deploy profissional em Ubuntu 22.04 (1 comando)
+
+Script completo (instala dependências, Nginx, PHP, MySQL, Node, SSH, firewall, app):
 
 ```bash
-composer install --no-dev --optimize-autoloader
-php artisan config:cache
-php artisan route:cache
-php artisan migrate --force
-npm ci && npm run production
+sudo bash deploy/install-ubuntu-22.04.sh \
+  --repo https://github.com/wesleiandersonti/TeleGroupBot.git \
+  --domain app.seudominio.com \
+  --email seu@email.com \
+  --db-name telegroupbot \
+  --db-user telegroupbot \
+  --db-pass 'SENHA_FORTE'
+```
+
+No final, o script mostra:
+- URL da aplicação
+- IP público detectado
+- comando SSH pronto
+
+## Update do sistema
+
+```bash
+bash deploy/update.sh /var/www/telegroupbot
 ```
