@@ -2,6 +2,9 @@
 
 Plataforma SaaS para gerenciamento de grupos no Telegram (base Laravel).
 
+## Documentação completa
+- `docs/DOCUMENTACAO_FUNCOES_E_USO.md`
+
 ## Requisitos
 
 - PHP 8+
